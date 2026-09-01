@@ -48,9 +48,9 @@
   }
   function makeCard(post) {
     const card = element('article', 'card');
-    const image = element('img'); image.src = post.image_path; image.alt = post.caption; image.loading = 'lazy';
+    const image = element('img'); image.src = post.image_path; image.alt = post.caption || `Публикация пользователя ${post.username}`; image.loading = 'lazy';
     const info = element('div', 'card-info');
-    info.append(element('p', '', post.caption));
+    if (post.caption) info.append(element('p', '', post.caption));
     const meta = element('div', 'meta'); meta.append(element('span', '', `@${post.username}`));
     const actions = element('span');
     const like = element('button', `like ${post.liked ? 'active' : ''}`, `${post.liked ? '♥' : '♡'} ${post.likes_count}`);
@@ -77,8 +77,9 @@
     try {
       const result = await request(`post&id=${id}`); state.currentPost = result;
       postContent.replaceChildren(); const view = element('div', 'post-view');
-      const image = element('img', 'post-image'); image.src = result.post.image_path; image.alt = result.post.caption;
-      const side = element('section', 'post-side'); side.append(element('h2', '', `@${result.post.username}`), element('p', 'caption', result.post.caption));
+      const image = element('img', 'post-image'); image.src = result.post.image_path; image.alt = result.post.caption || `Публикация пользователя ${result.post.username}`;
+      const side = element('section', 'post-side'); side.append(element('h2', '', `@${result.post.username}`));
+      if (result.post.caption) side.append(element('p', 'caption', result.post.caption));
       const like = element('button', `like ${result.post.liked ? 'active' : ''}`, `${result.post.liked ? '♥' : '♡'} ${result.post.likes_count}`);
       like.onclick = async () => { try { const data = await jsonRequest('like', { post_id: result.post.id }); result.post.liked = data.liked; result.post.likes_count = data.likes_count; like.textContent = `${data.liked ? '♥' : '♡'} ${data.likes_count}`; like.classList.toggle('active', data.liked); } catch (e) { notice(e.message); } };
       side.append(like);

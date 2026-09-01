@@ -79,8 +79,9 @@ switch ($action) {
 
     case 'create_post':
         requireCsrf(); $user = requireLogin();
-        $caption = cleanText($_POST['caption'] ?? '', 500, 'Подпись');
-        if (empty($_FILES['image']) || $_FILES['image']['error'] !== UPLOAD_ERR_OK || $_FILES['image']['size'] > 5 * 1024 * 1024) fail('Выберите изображение размером до 5 МБ.');
+        $caption = trim((string) ($_POST['caption'] ?? ''));
+        if (mb_strlen($caption) > 120) fail('Заголовок должен содержать не более 120 символов.');
+        if (empty($_FILES['image']) || $_FILES['image']['error'] !== UPLOAD_ERR_OK || $_FILES['image']['size'] > 25 * 1024 * 1024) fail('Выберите изображение размером до 25 МБ.');
         $file = $_FILES['image'];
         $mime = (new finfo(FILEINFO_MIME_TYPE))->file($file['tmp_name']);
         $extensions = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'];

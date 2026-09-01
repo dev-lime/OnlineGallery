@@ -1,5 +1,7 @@
+/*
 CREATE DATABASE IF NOT EXISTS online_gallery CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE online_gallery;
+*/
 
 CREATE TABLE users (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
