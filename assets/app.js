@@ -4,8 +4,10 @@
   const more = document.querySelector('#more');
   const postDialog = document.querySelector('#post-dialog');
   const authDialog = document.querySelector('#auth-dialog');
+  const profileDialog = document.querySelector('#profile-dialog');
   const postContent = document.querySelector('#post-content');
   const authContent = document.querySelector('#auth-content');
+  const profileContent = document.querySelector('#profile-content');
   const uploadArea = document.querySelector('#upload-area');
   const toast = document.querySelector('#toast');
 
@@ -15,7 +17,24 @@
     if (text !== undefined) node.textContent = text;
     return node;
   };
-  const date = value => new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(value.replace(' ', 'T')));
+
+  function timeAgo(value) {
+    const now = Date.now();
+    const then = new Date(value.replace(' ', 'T')).getTime();
+    const diff = Math.max(0, Math.floor((now - then) / 1000));
+    if (diff < 60) return 'только что';
+    const min = Math.floor(diff / 60);
+    if (min < 60) return `${min} мин. назад`;
+    const hr = Math.floor(min / 60);
+    if (hr < 24) return `${hr} ч. назад`;
+    const day = Math.floor(hr / 24);
+    if (day === 1) return 'вчера';
+    if (day < 7) return `${day} дн. назад`;
+    if (day < 30) return `${Math.floor(day / 7)} нед. назад`;
+    const d = new Date(then);
+    return `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getFullYear()).slice(2)}`;
+  }
+
   const notice = message => { toast.textContent = message; toast.classList.add('show'); setTimeout(() => toast.classList.remove('show'), 3200); };
 
   async function request(action, options = {}) {
@@ -29,6 +48,13 @@
     return data;
   }
   const jsonRequest = (action, body) => request(action, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+
+  function userLink(username, userId) {
+    const link = element('a', 'user-link', `@${username}`);
+    link.href = '#';
+    link.onclick = e => { e.preventDefault(); e.stopPropagation(); openProfile(userId); };
+    return link;
+  }
 
   function canDeleteComment(comment) {
     return state.user && (state.user.role === 'admin' || state.user.role === 'moderator' || (comment.user_id && comment.user_id === state.user.id));
@@ -51,7 +77,11 @@
     const image = element('img'); image.src = post.image_path; image.alt = post.caption || `Публикация пользователя ${post.username}`; image.loading = 'lazy';
     const info = element('div', 'card-info');
     if (post.caption) info.append(element('p', '', post.caption));
-    const meta = element('div', 'meta'); meta.append(element('span', '', `@${post.username}`));
+    const meta = element('div', 'meta');
+    const left = element('span');
+    left.append(userLink(post.username, post.author_id));
+    left.append(document.createTextNode(` · ${timeAgo(post.created_at)}`));
+    meta.append(left);
     const actions = element('span');
     const like = element('button', `like ${post.liked ? 'active' : ''}`, `${post.liked ? '♥' : '♡'} ${post.likes_count}`);
     like.onclick = async event => { event.stopPropagation(); try { const result = await jsonRequest('like', { post_id: post.id }); post.liked = result.liked; post.likes_count = result.likes_count; like.textContent = `${result.liked ? '♥' : '♡'} ${result.likes_count}`; like.classList.toggle('active', result.liked); } catch (e) { notice(e.message); } };
@@ -69,7 +99,13 @@
   }
   function commentNode(comment) {
     const item = element('article', 'comment');
-    const title = element('div'); title.append(element('b', '', comment.author), document.createTextNode(` · ${date(comment.created_at)}`));
+    const title = element('div');
+    if (comment.user_id) {
+      title.append(userLink(comment.author, comment.user_id));
+    } else {
+      title.append(element('b', '', comment.author));
+    }
+    title.append(document.createTextNode(` · ${timeAgo(comment.created_at)}`));
     if (canDeleteComment(comment)) { const del = element('button', 'delete', 'Удалить'); del.onclick = () => deleteComment(comment.id); title.append(del); }
     item.append(title, element('p', '', comment.body)); return item;
   }
@@ -78,7 +114,11 @@
       const result = await request(`post&id=${id}`); state.currentPost = result;
       postContent.replaceChildren(); const view = element('div', 'post-view');
       const image = element('img', 'post-image'); image.src = result.post.image_path; image.alt = result.post.caption || `Публикация пользователя ${result.post.username}`;
-      const side = element('section', 'post-side'); side.append(element('h2', '', `@${result.post.username}`));
+      const side = element('section', 'post-side');
+      const header = element('div', 'post-header');
+      header.append(userLink(result.post.username, result.post.author_id));
+      side.append(header);
+      side.append(element('p', 'post-time', timeAgo(result.post.created_at)));
       if (result.post.caption) side.append(element('p', 'caption', result.post.caption));
       const like = element('button', `like ${result.post.liked ? 'active' : ''}`, `${result.post.liked ? '♥' : '♡'} ${result.post.likes_count}`);
       like.onclick = async () => { try { const data = await jsonRequest('like', { post_id: result.post.id }); result.post.liked = data.liked; result.post.likes_count = data.likes_count; like.textContent = `${data.liked ? '♥' : '♡'} ${data.likes_count}`; like.classList.toggle('active', data.liked); } catch (e) { notice(e.message); } };
@@ -99,6 +139,39 @@
     form.append(username, password, element('button', '', register ? 'Зарегистрироваться' : 'Войти'));
     form.onsubmit = async event => { event.preventDefault(); try { const data = await jsonRequest(register ? 'register' : 'login', { username: username.value, password: password.value }); state.user = data.user; renderAccount(); authDialog.close(); notice(register ? 'Аккаунт создан.' : 'Вы вошли в аккаунт.'); } catch (e) { notice(e.message); } };
     const swap = element('p', 'switch'); swap.append(document.createTextNode(register ? 'Уже есть аккаунт? ' : 'Нет аккаунта? ')); const button = element('button', 'link-btn', register ? 'Войти' : 'Регистрация'); button.onclick = () => showAuth(!register); swap.append(button); authContent.append(form, swap); authDialog.showModal();
+  }
+  async function openProfile(userId) {
+    try {
+      const data = await request(`user&id=${userId}`);
+      profileContent.replaceChildren();
+      const info = element('div', 'profile-info');
+      info.append(element('h2', '', `@${data.user.username}`));
+      const stats = element('div', 'profile-stats');
+      stats.append(element('span', '', `${data.user.posts_count} публикаций`));
+      stats.append(element('span', '', `На сайте с ${timeAgo(data.user.created_at)}`));
+      info.append(stats);
+      profileContent.append(info);
+      if (data.posts.length) {
+        const grid = element('div', 'profile-posts');
+        data.posts.forEach(post => {
+          const card = element('article', 'card');
+          const image = element('img'); image.src = post.image_path; image.alt = post.caption || ''; image.loading = 'lazy';
+          const meta = element('div', 'card-info');
+          if (post.caption) meta.append(element('p', '', post.caption));
+          const actions = element('div', 'meta');
+          actions.append(document.createTextNode(timeAgo(post.created_at)));
+          actions.append(element('span', '', `♥ ${post.likes_count}`));
+          meta.append(actions);
+          card.append(image, meta);
+          card.onclick = () => { profileDialog.close(); openPost(post.id); };
+          grid.append(card);
+        });
+        profileContent.append(grid);
+      } else {
+        profileContent.append(element('p', 'profile-empty', 'Публикаций пока нет.'));
+      }
+      profileDialog.showModal();
+    } catch (e) { notice(e.message); }
   }
   document.querySelectorAll('.close').forEach(button => button.onclick = () => button.closest('dialog').close());
   document.querySelector('#upload-form').onsubmit = async event => { event.preventDefault(); const form = event.currentTarget; try { const data = new FormData(form); await request('create_post', { method: 'POST', body: data }); form.reset(); notice('Публикация добавлена.'); loadPosts(true); } catch (e) { notice(e.message); } };

@@ -29,6 +29,7 @@
 </main>
 <dialog id="post-dialog" class="post-dialog"><button class="close" aria-label="Закрыть">×</button><div id="post-content"></div></dialog>
 <dialog id="auth-dialog" class="auth-dialog"><button class="close" aria-label="Закрыть">×</button><div id="auth-content"></div></dialog>
+<dialog id="profile-dialog" class="profile-dialog"><button class="close" aria-label="Закрыть">×</button><div id="profile-content"></div></dialog>
 <div id="toast" class="toast" role="status"></div>
 <script src="assets/app.js"></script>
 </body>

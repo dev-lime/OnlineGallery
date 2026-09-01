@@ -27,6 +27,7 @@ function db(): PDO
             $config['db_password'],
             [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]
         );
+        $pdo->exec('SET NAMES utf8mb4');
     }
     return $pdo;
 }

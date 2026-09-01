@@ -32,6 +32,20 @@ switch ($action) {
     case 'session':
         jsonResponse(['ok' => true, 'csrf' => csrfToken(), 'user' => currentUser()]);
 
+    case 'user':
+        $id = (int) ($_GET['id'] ?? 0);
+        $statement = db()->prepare('SELECT id, username, created_at,
+            (SELECT COUNT(*) FROM posts WHERE author_id = ?) AS posts_count
+            FROM users WHERE id = ?');
+        $statement->execute([$id, $id]);
+        $user = $statement->fetch();
+        if (!$user) fail('Пользователь не найден.', 404);
+        $posts = db()->prepare('SELECT p.id, p.image_path, p.caption, p.created_at,
+            (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id) AS likes_count
+            FROM posts p WHERE p.author_id = ? ORDER BY p.created_at DESC, p.id DESC LIMIT 20');
+        $posts->execute([$id]);
+        jsonResponse(['ok' => true, 'user' => $user, 'posts' => $posts->fetchAll()]);
+
     case 'posts':
         jsonResponse(['ok' => true, 'posts' => postList((int) ($_GET['page'] ?? 1))]);
 
@@ -45,8 +59,8 @@ switch ($action) {
         $statement->execute([$viewer, $id]);
         $post = $statement->fetch();
         if (!$post) fail('Публикация не найдена.', 404);
-        $comments = db()->prepare('SELECT c.id, c.body, c.created_at, c.user_id, COALESCE(u.username, "Гость") AS author
-            FROM comments c LEFT JOIN users u ON u.id=c.user_id WHERE c.post_id=? ORDER BY c.created_at ASC, c.id ASC');
+        $comments = db()->prepare("SELECT c.id, c.body, c.created_at, c.user_id, COALESCE(u.username, 'Гость') AS author
+            FROM comments c LEFT JOIN users u ON u.id=c.user_id WHERE c.post_id=? ORDER BY c.created_at ASC, c.id ASC");
         $comments->execute([$id]);
         jsonResponse(['ok' => true, 'post' => $post, 'comments' => $comments->fetchAll(), 'user' => currentUser()]);
 
