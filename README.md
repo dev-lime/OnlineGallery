@@ -1,7 +1,6 @@
-
 # Online Gallery (OG)
 
-Минималистичное веб-приложение для публикации фотографий и обсуждения кадров в формате SPA (Single Page Application) без перезагрузки страниц.
+Минималистичное веб-приложение для публикации фотографий и обсуждения кадров в формате Single Page Application.
 
 Live Demo: [https://og.ct.ws/](https://og.ct.ws/)
 
@@ -17,43 +16,3 @@ Live Demo: [https://og.ct.ws/](https://og.ct.ws/)
   * Ограничение длины комментариев.
   * Экранирование спецсимволов (`htmlspecialchars`) для защиты от XSS.
   * Валидация загружаемых типов файлов на стороне PHP.
-
----
-
-## 🛠 Технологический стек
-
-* **Frontend:** HTML5, CSS3, JavaScript (Vanilla JS, Fetch API / XMLHttpRequest).
-* **Backend:** PHP 8.x (native).
-* **Хранение данных:** MySQL / JSON / Файловое хранилище.
-
----
-
-## 📂 Структура проекта
-
-```text
-gallery-app/
-│
-├── index.php             # Единственная точка входа (SPA)
-├── assets/
-│   ├── css/
-│   │   └── style.css     # Пользовательские стили
-│   └── js/
-│       └── main.js       # Логика AJAX-запросов и DOM-манипуляций
-│
-├── api/
-│   ├── upload.php        # Загрузка изображений и публикаций
-│   ├── get_gallery.php   # Получение ленты картинок
-│   ├── get_comments.php  # Загрузка комментариев
-│   ├── add_comment.php   # Добавление нового комментария
-│   └── get_profile.php   # Получение данных профиля
-│
-└── uploads/              # Каталог загруженных фотографий
-
-🚀 Локальный запуск
- * Клонируйте репозиторий:
-   git clone [https://github.com/your-username/online-gallery.git](https://github.com/your-username/online-gallery.git)
-
- * Настройте локальный веб-сервер (OpenServer, XAMPP, Nginx/Apache + PHP) и укажите корень в директорию проекта.
- * Убедитесь, что папка uploads/ имеет права на запись (chmod 777 uploads или аналогичные права для вашего веб-сервера).
- * Откройте проект в браузере по адресу http://localhost/online-gallery.
-
